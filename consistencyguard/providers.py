@@ -1,0 +1,109 @@
+"""
+LLM provider abstraction supporting Anthropic and OpenAI.
+Retry logic lives here so it's consistent whether you use providers
+directly or through guarded_call.
+"""
+
+import os
+from typing import Optional
+
+import anthropic as _anthropic_mod
+
+try:
+    import openai as _openai_mod
+    _OPENAI_AVAILABLE = True
+except ImportError:
+    _openai_mod = None  # type: ignore[assignment]
+    _OPENAI_AVAILABLE = False
+
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+
+def _retry():
+    return retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=8),
+        reraise=True,
+    )
+
+
+class AnthropicProvider:
+    def __init__(self, api_key: Optional[str] = None):
+        key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.client = _anthropic_mod.Anthropic(api_key=key)
+        self.async_client = _anthropic_mod.AsyncAnthropic(api_key=key)
+
+    @_retry()
+    def complete(self, prompt: str, model: str, max_tokens: int) -> str:
+        response = self.client.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text
+
+    async def acomplete(self, prompt: str, model: str, max_tokens: int) -> str:
+        from tenacity import AsyncRetrying
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=8),
+            reraise=True,
+        ):
+            with attempt:
+                response = await self.async_client.messages.create(
+                    model=model,
+                    max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.content[0].text
+
+
+class OpenAIProvider:
+    def __init__(self, api_key: Optional[str] = None):
+        if not _OPENAI_AVAILABLE:
+            raise ImportError("openai package required: pip install openai")
+        key = api_key or os.getenv("OPENAI_API_KEY")
+        self.client = _openai_mod.OpenAI(api_key=key)
+        self.async_client = _openai_mod.AsyncOpenAI(api_key=key)
+
+    @_retry()
+    def complete(self, prompt: str, model: str, max_tokens: int) -> str:
+        response = self.client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content
+
+    async def acomplete(self, prompt: str, model: str, max_tokens: int) -> str:
+        from tenacity import AsyncRetrying
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=8),
+            reraise=True,
+        ):
+            with attempt:
+                response = await self.async_client.chat.completions.create(
+                    model=model,
+                    max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.choices[0].message.content
+
+
+def get_provider(
+    name: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> "AnthropicProvider | OpenAIProvider":
+    """
+    Factory. Reads PROVIDER env var (default 'anthropic').
+    Pass name to override the env var.
+    """
+    resolved = (name or os.getenv("PROVIDER", "anthropic")).lower()
+    if resolved == "anthropic":
+        return AnthropicProvider(api_key=api_key)
+    elif resolved == "openai":
+        return OpenAIProvider(api_key=api_key)
+    raise ValueError(
+        f"Unknown provider '{resolved}'. Supported: anthropic, openai"
+    )
