@@ -14,7 +14,7 @@ different answers to the same question, before your users notice.**
 Deploying AI agents in production reveals a problem nobody talks about enough:
 **the same question gets different answers on different days.**
 
-While researching enterprise AI agent failures in 2026, I kept running into
+While researching enterprise AI agent failures, I kept running into
 variations of the same story — a support agent tells one customer "no refunds
 after 30 days" and tells another "full refund within 60 days." A knowledge
 agent cites a policy that was updated last quarter. A sales agent quotes a
