@@ -1,0 +1,73 @@
+# Contributing to ConsistencyGuard
+
+Thanks for taking the time to contribute.
+
+---
+
+## Local Setup
+
+```bash
+git clone https://github.com/sameerpashasyed17-collab/consistencyguard.git
+cd consistencyguard
+pip install -e ".[dev]"
+cp .env.example .env
+# Add your ANTHROPIC_API_KEY or OPENAI_API_KEY to .env if testing real calls
+```
+
+## Running Tests
+
+```bash
+pytest tests/ -v
+```
+
+All 24 tests must pass before opening a PR. Tests use real sentence-transformer
+embeddings (no mocking) and fully isolated SQLite databases per test via
+`conftest.py` — no API key required.
+
+## Running the Demo
+
+```bash
+python demo/run_demo.py
+```
+
+The demo must exit cleanly with 3 violations detected (1 critical, 2 warning).
+No API key required.
+
+## Project Structure
+
+```
+consistencyguard/
+├── consistencyguard/
+│   ├── models.py      # Pydantic data models — start here
+│   ├── embedder.py    # Local sentence-transformer embedding
+│   ├── store.py       # SQLite persistence layer
+│   ├── detector.py    # Cosine similarity + divergence logic
+│   ├── proxy.py       # guarded_call / aguarded_call entry points
+│   ├── providers.py   # Anthropic + OpenAI provider abstraction
+│   ├── webhooks.py    # Webhook alert dispatch
+│   ├── reporter.py    # Rich terminal output
+│   └── cli.py         # Click CLI (cg command)
+├── tests/
+├── demo/
+└── docs/
+```
+
+## Guidelines
+
+- **Tests first** — add a test for any new behaviour before writing the implementation
+- **No external state in tests** — the `isolated_db` fixture in `conftest.py` handles DB isolation automatically; do not add per-test DB setup
+- **Provider abstraction** — new LLM providers should implement `complete()` and `acomplete()` and be registered in `get_provider()`
+- **No secrets in code** — all credentials via environment variables only
+- **Keep the demo clean** — `run_demo.py` must always work with zero API key
+
+## Submitting a PR
+
+1. Fork the repo and create a branch from `main`
+2. Make your changes with tests
+3. Run `pytest tests/ -v` and `python demo/run_demo.py`
+4. Open a PR using the template — fill in every section
+
+## Reporting Bugs
+
+Use the Bug Report issue template. Include your Python version, OS, and the
+full error output.

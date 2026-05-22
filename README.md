@@ -241,6 +241,7 @@ consistencyguard/
 ├── demo/
 │   └── run_demo.py    # zero-API-key demo
 ├── docs/
+│   ├── SYSTEM_DESIGN.md      # architecture, data flow, scaling analysis
 │   └── FAILURE_ANALYSIS.md   # 8 real failure scenarios + RCA
 └── pyproject.toml
 ```
@@ -312,7 +313,8 @@ Works with any HTTP endpoint that accepts a JSON POST — Slack incoming webhook
 
 ## Contributing
 
-Issues and PRs welcome. Before opening a PR:
+Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup,
+test instructions, and PR guidelines.
 
 ```bash
 pytest tests/ -v          # all 24 tests must pass
