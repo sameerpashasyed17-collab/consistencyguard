@@ -4,6 +4,17 @@ All notable changes to ConsistencyGuard are documented here.
 
 ---
 
+## [1.0.1] — 2026-05-23
+
+### Added
+
+- `tests/test_user_flows.py` — 7 end-to-end user flow tests simulating real developer integration: first call (no history), consistent follow-ups, contradicting response detection, violation metadata validation, stats aggregation, and cross-agent divergence detection
+- Documented global consistency scope: ConsistencyGuard compares new calls against all past calls across all agents, not per-agent; cross-agent violations are intentional and now covered by tests
+
+### Total test count: 31 (up from 24)
+
+---
+
 ## [1.0.0] — 2026-05-21
 
 ### Added

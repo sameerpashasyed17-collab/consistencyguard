@@ -323,6 +323,36 @@ a new infrastructure dependency. Warranted only at very high call volumes.
 
 ---
 
+## Testing Strategy
+
+### Unit tests (existing — 24 tests)
+
+| Suite | What it tests |
+|---|---|
+| `test_detector.py` | Embedder, cosine similarity, divergence, severity thresholds |
+| `test_store.py` | SQLite schema, call persistence, violation storage, stats |
+| `test_providers.py` | Anthropic + OpenAI sync/async, factory, mocked — no API keys |
+
+### User flow tests (added — 7 tests)
+
+`tests/test_user_flows.py` tests the library as a developer would actually use it — no mocking of internals, only the LLM provider is mocked:
+
+| Test | Scenario |
+|---|---|
+| `test_first_call_returns_response_no_violations` | No history → no false alarms |
+| `test_consistent_responses_produce_no_violations` | Same answer repeated → stays clean |
+| `test_contradicting_response_raises_violation` | Different answer on same prompt → CRITICAL/WARNING |
+| `test_violation_metadata_is_correct` | `agent_id`, `response_divergence`, `new_response` populated correctly |
+| `test_stats_count_calls_and_violations` | `get_stats()` reflects actual call/violation counts |
+| `test_cross_agent_divergence_is_detected` | Cross-agent contradiction → violation (global scope, by design) |
+| `test_stats_aggregate_across_agents` | Stats aggregate all agents globally |
+
+### Key discovery from user testing
+
+ConsistencyGuard uses **global** consistency scope: `check_consistency()` scans all stored calls regardless of `agent_id`. A contradicting answer from `agent-b` on a prompt already answered by `agent-a` triggers a violation. This is intentional — cross-agent inconsistency is a real production risk — but must be documented so integrators are not surprised.
+
+---
+
 ## Known Limitations and Roadmap
 
 | Limitation | Impact | Planned Fix |

@@ -20,9 +20,26 @@ cp .env.example .env
 pytest tests/ -v
 ```
 
-All 24 tests must pass before opening a PR. Tests use real sentence-transformer
+All 31 tests must pass before opening a PR. Tests use real sentence-transformer
 embeddings (no mocking) and fully isolated SQLite databases per test via
 `conftest.py` — no API key required.
+
+### Test suites
+
+| File | Tests | What it covers |
+|---|---|---|
+| `test_detector.py` | 8 | Embedder cosine similarity, divergence scoring, severity classification |
+| `test_store.py` | 6 | SQLite schema, save/load calls, violation persistence, stats aggregation |
+| `test_providers.py` | 10 | Anthropic + OpenAI sync/async — all mocked, no API keys needed |
+| `test_user_flows.py` | 7 | End-to-end developer flows: first call, consistency, violations, cross-agent behaviour |
+
+### Important: global consistency scope
+
+ConsistencyGuard compares every new call against **all** past calls in the
+database, across all agents. A contradicting response from `agent-b` on a
+prompt already answered by `agent-a` **will** trigger a violation. This is
+by design — cross-agent inconsistency matters in production. See
+`test_user_flows.py::test_cross_agent_divergence_is_detected`.
 
 ## Running the Demo
 
